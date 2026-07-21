@@ -51,15 +51,6 @@ export default function App() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState<boolean>(false);
   const [isApiKeyMandatory, setIsApiKeyMandatory] = useState<boolean>(false);
 
-  // Check if API key is missing on mount
-  useEffect(() => {
-    const key = localStorage.getItem("leego_gemini_api_key");
-    if (!key) {
-      setIsApiKeyMandatory(true);
-      setIsApiKeyModalOpen(true);
-    }
-  }, []);
-
   // Fetch student progress from Google Apps Script after successful login
   useEffect(() => {
     if (isLoggedIn) {
