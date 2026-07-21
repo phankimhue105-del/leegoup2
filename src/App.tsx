@@ -12,9 +12,12 @@ import { GrammarTab } from "./components/GrammarTab";
 import { SpeakingTab } from "./components/SpeakingTab";
 import { StudyDashboard } from "./components/StudyDashboard";
 import { ApiKeyModal } from "./components/ApiKeyModal";
+import { LoginPage } from "./components/LoginPage";
 import { BookOpen, Award, MessageCircle, Star, Sparkles, AlertCircle } from "lucide-react";
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
   // Load progress from localStorage on initialization
   const [progress, setProgress] = useState<UserProgress>(() => {
     try {
@@ -159,6 +162,10 @@ export default function App() {
     setActiveUnitId("classroom_verbs");
     setActiveTab("vocabulary");
   };
+
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans" id="leego-app-root">
