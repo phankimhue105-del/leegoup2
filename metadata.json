@@ -1,0 +1,6 @@
+{
+  "name": "LeeGo Smart Mentor",
+  "description": "A smart English learning platform for primary students based on Everybody Up 2 and customized for LeeGo English Centre, featuring vocabulary review, grammar practice, and an AI speaking coach.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
