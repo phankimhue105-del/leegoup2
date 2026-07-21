@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { Sparkles, Trophy, Award, Phone, RefreshCw } from "lucide-react";
+import { Sparkles, Trophy, Award, Phone, RefreshCw, LogOut } from "lucide-react";
 
 interface HeaderProps {
   stars: number;
@@ -13,6 +13,7 @@ interface HeaderProps {
   onReset: () => void;
   onOpenDashboard: () => void;
   onOpenApiKeySettings: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,7 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   totalUnits,
   onReset,
   onOpenDashboard,
-  onOpenApiKeySettings
+  onOpenApiKeySettings,
+  onLogout
 }) => {
   // Determine kid's level badge based on stars
   const getLevelBadge = (starCount: number) => {
@@ -114,6 +116,22 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <RefreshCw size={15} />
           </button>
+
+          {/* Logout Button */}
+          {onLogout && (
+            <button
+              onClick={() => {
+                if (window.confirm("Con có chắc chắn muốn đăng xuất không?")) {
+                  onLogout();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-full shadow-md shadow-red-200 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Đăng xuất"
+            >
+              <LogOut size={14} />
+              <span>Đăng xuất</span>
+            </button>
+          )}
         </div>
 
       </div>
