@@ -13,6 +13,7 @@ import { SpeakingTab } from "./components/SpeakingTab";
 import { StudyDashboard } from "./components/StudyDashboard";
 import { ApiKeyModal } from "./components/ApiKeyModal";
 import { LoginPage } from "./components/LoginPage";
+import { fetchStudentProgress } from "./services/progressService";
 import { BookOpen, Award, MessageCircle, Star, Sparkles, AlertCircle } from "lucide-react";
 
 export default function App() {
@@ -53,6 +54,37 @@ export default function App() {
       setIsApiKeyModalOpen(true);
     }
   }, []);
+
+  // Fetch student progress from Google Apps Script after successful login
+  useEffect(() => {
+    if (isLoggedIn) {
+      const username = localStorage.getItem("username") || "";
+      if (username) {
+        fetchStudentProgress(username).then((data) => {
+          if (data) {
+            setProgress((prev) => {
+              const unitCountMatch = data.completedUnit ? data.completedUnit.match(/\d+/) : null;
+              const unitCount = unitCountMatch ? parseInt(unitCountMatch[0], 10) : 0;
+              const completedUnitsArr: string[] = [];
+              for (let i = 1; i <= unitCount; i++) {
+                completedUnitsArr.push(`unit${i}`);
+              }
+
+              const mergedCompletedUnits = Array.from(
+                new Set([...prev.completedUnits, ...completedUnitsArr])
+              );
+
+              return {
+                ...prev,
+                stars: data.goldStars,
+                completedUnits: mergedCompletedUnits,
+              };
+            });
+          }
+        });
+      }
+    }
+  }, [isLoggedIn]);
 
   // Save progress to localStorage whenever it changes
   useEffect(() => {
