@@ -230,6 +230,23 @@ export default function App() {
     setActiveTab("vocabulary");
   };
 
+  const handleLogout = () => {
+    // Clear user session keys from localStorage
+    localStorage.removeItem("username");
+    localStorage.removeItem("studentName");
+    localStorage.removeItem("goldStars");
+    localStorage.removeItem("level");
+    localStorage.removeItem("completedUnit");
+
+    // Reset baseline tracking refs
+    syncedStarsRef.current = null;
+    syncedUnitCountRef.current = null;
+    isBaselineLoadedRef.current = false;
+
+    // Return to login screen via React state
+    setIsLoggedIn(false);
+  };
+
   if (!isLoggedIn) {
     return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
   }
@@ -248,6 +265,7 @@ export default function App() {
           setIsApiKeyMandatory(false);
           setIsApiKeyModalOpen(true);
         }}
+        onLogout={handleLogout}
       />
 
       {/* 2. Main content panel */}
