@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SYLLABUS_DATA, UserProgress } from "./types";
 import { Header } from "./components/Header";
 import { UnitSelector } from "./components/UnitSelector";
@@ -13,11 +13,16 @@ import { SpeakingTab } from "./components/SpeakingTab";
 import { StudyDashboard } from "./components/StudyDashboard";
 import { ApiKeyModal } from "./components/ApiKeyModal";
 import { LoginPage } from "./components/LoginPage";
-import { fetchStudentProgress } from "./services/progressService";
+import { fetchStudentProgress, updateStudentProgress } from "./services/progressService";
 import { BookOpen, Award, MessageCircle, Star, Sparkles, AlertCircle } from "lucide-react";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
+  // Baseline refs for tracking online synced progress to prevent overwriting with older local data
+  const syncedStarsRef = useRef<number | null>(null);
+  const syncedUnitCountRef = useRef<number | null>(null);
+  const isBaselineLoadedRef = useRef<boolean>(false);
 
   // Load progress from localStorage on initialization
   const [progress, setProgress] = useState<UserProgress>(() => {
@@ -62,9 +67,15 @@ export default function App() {
       if (username) {
         fetchStudentProgress(username).then((data) => {
           if (data) {
+            const unitCountMatch = data.completedUnit ? data.completedUnit.match(/\d+/) : null;
+            const unitCount = unitCountMatch ? parseInt(unitCountMatch[0], 10) : 0;
+
+            // Establish initial synced baseline from Google Apps Script
+            syncedStarsRef.current = data.goldStars;
+            syncedUnitCountRef.current = unitCount;
+            isBaselineLoadedRef.current = true;
+
             setProgress((prev) => {
-              const unitCountMatch = data.completedUnit ? data.completedUnit.match(/\d+/) : null;
-              const unitCount = unitCountMatch ? parseInt(unitCountMatch[0], 10) : 0;
               const completedUnitsArr: string[] = [];
               for (let i = 1; i <= unitCount; i++) {
                 completedUnitsArr.push(`unit${i}`);
@@ -76,7 +87,7 @@ export default function App() {
 
               return {
                 ...prev,
-                stars: data.goldStars,
+                stars: Math.max(prev.stars, data.goldStars),
                 completedUnits: mergedCompletedUnits,
               };
             });
@@ -86,10 +97,34 @@ export default function App() {
     }
   }, [isLoggedIn]);
 
-  // Save progress to localStorage whenever it changes
+  // Save progress to localStorage and sync to Google Sheet when progress increases in current session
   useEffect(() => {
     localStorage.setItem("leego_progress", JSON.stringify(progress));
-  }, [progress]);
+
+    if (
+      isLoggedIn &&
+      isBaselineLoadedRef.current &&
+      syncedStarsRef.current !== null &&
+      syncedUnitCountRef.current !== null
+    ) {
+      const currentStars = progress.stars;
+      const currentUnitCount = progress.completedUnits.length;
+
+      // Anti-overwrite check: ONLY update if user has made ACTUAL progress in this session
+      if (currentStars > syncedStarsRef.current || currentUnitCount > syncedUnitCountRef.current) {
+        syncedStarsRef.current = currentStars;
+        syncedUnitCountRef.current = currentUnitCount;
+
+        const username = localStorage.getItem("username") || "";
+        const studentName = localStorage.getItem("studentName") || username;
+        const currentLevel = `Level ${Math.max(1, Math.floor(currentStars / 25) + 1)}`;
+        const currentCompletedUnit = `Unit ${currentUnitCount}`;
+
+        // Fire background update to Google Apps Script (tiendo sheet)
+        updateStudentProgress(username, studentName, currentStars, currentLevel, currentCompletedUnit);
+      }
+    }
+  }, [progress, isLoggedIn]);
 
   // Find active unit object
   const activeUnit = SYLLABUS_DATA.find(u => u.id === activeUnitId) || SYLLABUS_DATA[0];
