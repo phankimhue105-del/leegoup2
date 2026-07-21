@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Eye, EyeOff, Lock, User, AlertCircle, Sparkles, LogIn } from "lucide-react";
+import { Eye, EyeOff, Lock, User, AlertCircle, Sparkles, LogIn, Loader2 } from "lucide-react";
+import { loginWithGoogleScript } from "../services/authService";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -10,15 +11,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
-    if (username.trim() === "admin" && password === "123456") {
-      onLoginSuccess();
-    } else {
-      setErrorMessage("Tên đăng nhập hoặc mật khẩu không đúng.");
+    if (!username.trim() || !password) {
+      setErrorMessage("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await loginWithGoogleScript(username, password);
+      if (result.success) {
+        onLoginSuccess();
+      } else {
+        setErrorMessage(result.message || "Tên đăng nhập hoặc mật khẩu không đúng.");
+      }
+    } catch (err) {
+      setErrorMessage("Lỗi hệ thống. Vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,11 +92,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Nhập tên đăng nhập"
+                  disabled={isLoading}
                   autoComplete="off"
                   spellCheck={false}
                   autoCorrect="off"
                   autoCapitalize="none"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-800 font-bold placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-800 font-bold placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all text-sm disabled:opacity-60"
                 />
               </div>
             </div>
@@ -102,17 +118,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu"
+                  disabled={isLoading}
                   autoComplete="off"
                   spellCheck={false}
                   autoCorrect="off"
                   autoCapitalize="none"
-                  className="w-full pl-10 pr-12 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-800 font-bold placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all text-sm"
+                  className="w-full pl-10 pr-12 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-800 font-bold placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition-all text-sm disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="Hiện / ẩn mật khẩu"
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                  disabled={isLoading}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -122,10 +140,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full mt-2 py-3.5 px-6 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-200 hover:shadow-red-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-base"
+              disabled={isLoading}
+              className="w-full mt-2 py-3.5 px-6 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-200 hover:shadow-red-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-base disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <LogIn size={20} />
-              <span>ĐĂNG NHẬP</span>
+              {isLoading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>ĐANG ĐĂNG NHẬP...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={20} />
+                  <span>ĐĂNG NHẬP</span>
+                </>
+              )}
             </button>
           </form>
 
