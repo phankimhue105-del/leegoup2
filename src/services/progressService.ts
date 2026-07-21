@@ -88,3 +88,56 @@ export async function fetchStudentProgress(username: string): Promise<StudentPro
   }
 }
 
+export async function updateStudentProgress(
+  username: string,
+  studentName: string,
+  goldStars: number,
+  level: string,
+  completedUnit: string
+): Promise<boolean> {
+  if (!username) return false;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify({
+        action: "updateProgress",
+        username: username.trim(),
+        studentName: studentName || username.trim(),
+        goldStars: goldStars,
+        level: level,
+        completedUnit: completedUnit,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) return false;
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch {
+      return false;
+    }
+
+    if (data && data.success) {
+      localStorage.setItem("goldStars", String(goldStars));
+      localStorage.setItem("level", level);
+      localStorage.setItem("completedUnit", completedUnit);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    // Silent fail on network error - no crash, no alert, no logout
+    return false;
+  }
+}
